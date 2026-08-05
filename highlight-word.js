@@ -1,5 +1,4 @@
 function highlightWord(str, keywords) {
-  const results = [];
   const matches = [];
   for (const keyword of keywords) {
     let start = str.indexOf(keyword);
@@ -14,7 +13,7 @@ function highlightWord(str, keywords) {
   }
   matches.sort((a, b) => a.start - b.start);
   const merged = [];
-  if (matches.length === 0) return [];
+  if (matches.length === 0) return str;
 
   merged.push(matches[0]);
   for (let i = 1; i < matches.length; i++) {
