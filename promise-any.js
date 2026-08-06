@@ -1,17 +1,22 @@
 /*
-Promise.any tries to resolve any one of the promise if none of them resolves it then rejects whole
+Promise.any tries to resolve any one of the promise if none of them resolves it then rejects whole with aggregated error
 */
 Promise.myAny = function (promises = []) {
   if (!Array.isArray(promises)) throw TypeError();
   let failed = 0;
+  const failedResults = new Array(promises.length);
   return new Promise((resolve, reject) => {
-    promises.forEach((promise) => {
+    promises.forEach((promise, index) => {
       Promise.resolve(promise)
         .then(resolve)
         .catch((reason) => {
+          failedResults[index] = {
+            status: "Rejected",
+            reason,
+          };
           failed++;
           if (failed === promises.length) {
-            reject(reason);
+            reject(new AggregateError(failedResults));
           }
         });
     });
