@@ -1,3 +1,14 @@
+function composeAsync(...fns) {
+  return async function (...args) {
+    let result = args;
+    const functions = [...fns].reverse();
+    for (let fn of functions) {
+      result = await fn(...(Array.isArray(result) ? result : [result]));
+    }
+    return result;
+  };
+}
+
 function a(x, y) {
   return new Promise((resolve) => setTimeout(() => resolve(x * y), 100));
 }
