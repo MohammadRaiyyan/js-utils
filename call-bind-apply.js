@@ -34,3 +34,17 @@ Function.prototype.myApply = function (thisObj, args = []) {
 };
 
 printUser.myApply(user);
+
+Function.prototype.myBind = function (thisObj, ...args) {
+  const self = thisObj || globalThis;
+  const fn = this;
+  return function (...bindArgs) {
+    const key = Symbol();
+    self[key] = fn;
+    const result = self[key](...args, ...bindArgs);
+    delete self[key];
+    return result;
+  };
+};
+const print = printUser.myBind(user);
+print();
