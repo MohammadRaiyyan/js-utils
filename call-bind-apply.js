@@ -8,6 +8,22 @@ function printUser() {
 }
 
 Function.prototype.myCall = function (thisObj, ...args) {
+  const self = thisObj || globalThis;
+  const callerKey = Symbol();
+  const caller = this;
+  self[callerKey] = caller;
+  const result = self[callerKey](...args);
+  delete self[callerKey];
+
+  return result;
+};
+
+printUser.myCall(user);
+
+Function.prototype.myApply = function (thisObj, args = []) {
+  if (!Array.isArray(args)) {
+    throw new TypeError(`Expected argument type Array but got ${typeof args}`);
+  }
   const callerKey = Symbol();
   const caller = this;
   thisObj[callerKey] = caller;
@@ -17,4 +33,4 @@ Function.prototype.myCall = function (thisObj, ...args) {
   return result;
 };
 
-printUser.myCall(user);
+printUser.myApply(user);
