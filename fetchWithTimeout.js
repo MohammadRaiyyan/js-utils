@@ -1,4 +1,3 @@
-// Version 1
 async function fetchWithTimeoutv1(promise, timeoutMs = 10000) {
   return await Promise.race([
     promise, // This will eventually resolve but race function does not cares if timeout promise is resolved first
@@ -25,6 +24,3 @@ function callAPI(message, delay, doReject = false) {
 fetchWithTimeoutv1(callAPI("Call API 1", 500), 300)
   .then(console.log)
   .catch(console.error);
-
-//  Version 2 = Abort the actual promise call if timeout
-// TODO:
