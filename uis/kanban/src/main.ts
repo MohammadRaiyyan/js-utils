@@ -1,60 +1,202 @@
-import './style.css'
-import heroImg from './assets/hero.png'
-import typescriptLogo from './assets/typescript.svg'
-import viteLogo from './assets/vite.svg'
-import { setupCounter } from './counter.ts'
+import "./style.css";
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-<section id="center">
-  <div class="hero">
-    <img src="${heroImg}" class="base" width="170" height="179">
-    <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
-    <img src="${viteLogo}" class="vite" alt="Vite logo" />
-  </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
-  </div>
-  <button id="counter" type="button" class="counter"></button>
-</section>
+// State
+interface Card {
+  id: string;
+  title: string;
+  position: number;
+}
+interface Column {
+  title: string;
+  cards: Array<Card>;
+}
+interface State {
+  board: Map<string, Column>;
+}
 
-<div class="ticks"></div>
+type Action = {
+  type: "MOVE_CARD";
+  payload: {
+    cardId: string;
+    fromColumnId: string;
+    toColumnId: string;
+    position?: number;
+  };
+};
 
-<section id="next-steps">
-  <div id="docs">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#documentation-icon"></use></svg>
-    <h2>Documentation</h2>
-    <p>Your questions, answered</p>
-    <ul>
-      <li>
-        <a href="https://vite.dev/" target="_blank">
-          <img class="logo" src="${viteLogo}" alt="" />
-          Explore Vite
-        </a>
-      </li>
-      <li>
-        <a href="https://www.typescriptlang.org" target="_blank">
-          <img class="button-icon" src="${typescriptLogo}" alt="">
-          Learn more
-        </a>
-      </li>
-    </ul>
-  </div>
-  <div id="social">
-    <svg class="icon" role="presentation" aria-hidden="true"><use href="/icons.svg#social-icon"></use></svg>
-    <h2>Connect with us</h2>
-    <p>Join the Vite community</p>
-    <ul>
-      <li><a href="https://github.com/vitejs/vite" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#github-icon"></use></svg>GitHub</a></li>
-      <li><a href="https://chat.vite.dev/" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#discord-icon"></use></svg>Discord</a></li>
-      <li><a href="https://x.com/vite_js" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#x-icon"></use></svg>X.com</a></li>
-      <li><a href="https://bsky.app/profile/vite.dev" target="_blank"><svg class="button-icon" role="presentation" aria-hidden="true"><use href="/icons.svg#bluesky-icon"></use></svg>Bluesky</a></li>
-    </ul>
-  </div>
-</section>
+const BOARD: State["board"] = new Map();
+BOARD.set(crypto.randomUUID(), {
+  title: "Todo",
+  cards: [
+    { id: crypto.randomUUID(), position: 1, title: "Work On design" },
+    { id: crypto.randomUUID(), position: 1, title: "Work On Performance" },
+  ],
+});
+BOARD.set(crypto.randomUUID(), {
+  title: "In-progress",
+  cards: [
+    {
+      id: crypto.randomUUID(),
+      position: 1,
+      title: "Work On Typescript migration",
+    },
+    { id: crypto.randomUUID(), position: 1, title: "Work On Onboarding fixes" },
+  ],
+});
 
-<div class="ticks"></div>
-<section id="spacer"></section>
-`
+let state: State = {
+  board: BOARD,
+};
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+const reducer = (state: State, action: Action): State => {
+  switch (action.type) {
+    case "MOVE_CARD": {
+      const copyBoard = new Map(state.board);
+      const fromColumn = copyBoard.get(action.payload.fromColumnId);
+      const toColumn = copyBoard.get(action.payload.toColumnId);
+      const card = fromColumn.cards.find(
+        (card) => card.id === action.payload.cardId,
+      );
+      copyBoard.set(action.payload.fromColumnId, {
+        ...fromColumn,
+        cards: fromColumn.cards.filter(
+          (card) => card.id !== action.payload.cardId,
+        ),
+      });
+      copyBoard.set(action.payload.toColumnId, {
+        ...toColumn,
+        cards: [...toColumn.cards, card],
+      });
+      // TODO:
+      // Position placemnt support
+      return {
+        ...state,
+        board: copyBoard,
+      };
+    }
+
+    default:
+      return state;
+  }
+};
+
+const dispatch = (action: Action) => {
+  state = reducer(state, action);
+  render();
+};
+
+// render
+const root = document.querySelector<HTMLDivElement>("#app")!;
+
+function render() {
+  const templateStrings = [];
+  state.board.forEach((column, columnId) => {
+    templateStrings.push(`
+        <article class="column" data-column=${columnId}>
+          <h2>${column.title}</h2>
+          <ul>
+            ${
+              column.cards.length > 0
+                ? column.cards
+                    .map((card) => {
+                      return `
+                <li class="card" draggable="true" data-column=${columnId} data-id=${card.id}>${card.title}</li>
+              `;
+                    })
+                    .join("")
+                : `<span>No card!</span>`
+            }
+          </ul>
+        </article>
+      `);
+  });
+  root.innerHTML = `
+    <main class="board">
+      ${templateStrings.join("")}
+    </main>
+  `;
+}
+
+// Events
+root.addEventListener("dragstart", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const card = target.closest<HTMLElement>(".card");
+  if (!card) return;
+  card.classList.add("dragging");
+  const cardId = card.dataset.id;
+  const fromColumnId = card.dataset.column;
+  if (!cardId || !fromColumnId) return;
+  event.dataTransfer.setData(
+    "application/json",
+    JSON.stringify({ cardId, fromColumnId }),
+  );
+});
+root.addEventListener("dragend", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const card = target.closest<HTMLElement>(".card");
+  if (!card) return;
+  card.classList.remove("dragging");
+});
+root.addEventListener("dragover", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const column = target.closest<HTMLElement>(".column");
+  if (!column) return;
+  event.preventDefault();
+});
+root.addEventListener("dragenter", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const column = target.closest<HTMLElement>(".column");
+  if (!column) return;
+  column.classList.add("dragenter");
+});
+root.addEventListener("dragleave", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const column = target.closest<HTMLElement>(".column");
+  if (!column) return;
+  column.classList.remove("dragenter");
+});
+root.addEventListener("drop", (event) => {
+  const target = event.target;
+  if (!(target instanceof HTMLElement)) {
+    return;
+  }
+
+  const column = target.closest<HTMLElement>(".column");
+  if (!column) return;
+  event.preventDefault();
+  column.classList.remove("dragenter");
+  const toColumnId = column.dataset.column;
+  if (!toColumnId) return;
+  const { cardId, fromColumnId } = JSON.parse(
+    event.dataTransfer.getData("application/json"),
+  ) as { fromColumnId: string; cardId: string };
+  if (fromColumnId === toColumnId) return;
+  dispatch({
+    type: "MOVE_CARD",
+    payload: { cardId, fromColumnId, toColumnId },
+  });
+});
+//
+document.addEventListener("DOMContentLoaded", () => {
+  render();
+});
