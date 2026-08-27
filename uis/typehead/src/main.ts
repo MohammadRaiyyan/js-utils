@@ -149,30 +149,43 @@ function render() {
             .join("");
 }
 // events
-root.addEventListener("input", (event) => {
+function getSearchInput(event: Event): {
+  value: string;
+  element?: HTMLInputElement;
+} {
   const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
+  if (!(target instanceof HTMLInputElement))
+    return {
+      value: "",
+    };
   const targetElement = target.closest<HTMLInputElement>("[data-action]");
+  if (!targetElement)
+    return {
+      value: "",
+    };
+  const targetAction = targetElement.dataset.action;
+  if (targetAction === "SEARCH_USERS") {
+    return {
+      value: target.value,
+      element: targetElement,
+    };
+  }
+}
+root.addEventListener("input", (event) => {
+  const { element: targetElement, value } = getSearchInput(event);
   if (!targetElement) return;
   const targetAction = targetElement.dataset.action;
   if (targetAction === "SEARCH_USERS") {
     dispatch({
       type: "SET_SEARCH",
-      payload: { search: target.value },
+      payload: { search: value },
     });
-    void scheduleSearch(target.value);
-    const menu = document.getElementById("menu-list");
-    console.log("Menu", menu);
-    if (menu) {
-      menu.classList.add("show-menu");
-    }
+    void scheduleSearch(value);
   }
 });
 
 root.addEventListener("focusin", (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  const targetElement = target.closest<HTMLInputElement>("[data-action]");
+  const { element: targetElement } = getSearchInput(event);
   if (!targetElement) return;
   const targetAction = targetElement.dataset.action;
   if (targetAction === "SEARCH_USERS") {
@@ -183,9 +196,7 @@ root.addEventListener("focusin", (event) => {
   }
 });
 root.addEventListener("focusout", (event) => {
-  const target = event.target;
-  if (!(target instanceof HTMLInputElement)) return;
-  const targetElement = target.closest<HTMLInputElement>("[data-action]");
+  const { element: targetElement } = getSearchInput(event);
   if (!targetElement) return;
   const targetAction = targetElement.dataset.action;
   if (targetAction === "SEARCH_USERS") {
