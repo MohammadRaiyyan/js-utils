@@ -71,4 +71,44 @@ function processedcallback(results) {
   console.log(results);
 }
 
-mapLimit([1, 2, 3, 4, 5], 3, iterateeFn, processedcallback);
+// mapLimit([1, 2, 3, 4, 5], 3, iterateeFn, processedcallback);
+
+// Map Limit 2
+//
+async function mapLimit2(tasks = [], limit = 2, mapper = () => {}) {
+  if (limit <= 0) throw new Error("Limit should be greater than 0");
+  const result = [];
+  const runningTasks = new Set();
+  for (let index = 0; index < tasks.length; index++) {
+    const task = Promise.resolve()
+      .then(() => mapper(tasks[index], index))
+      .then((res) => (result[index] = res))
+      .finally(() => {
+        runningTasks.delete(task);
+      });
+
+    runningTasks.add(task);
+    console.log(`📌 Added ${task}, Currently Running = ${runningTasks.size}`);
+    if (runningTasks.size >= limit) {
+      console.log(`⏸ Limit reached (${limit}). Waiting...\n`);
+      await Promise.race(runningTasks);
+      console.log(`▶ One task completed. Continuing...\n`);
+    }
+  }
+  await Promise.all(runningTasks);
+  return result;
+}
+const items = [1, 2, 3, 4, 5];
+const maxLimit = 3;
+function mapper(task, index) {
+  return new Promise((resolve) => {
+    setTimeout(
+      () => {
+        resolve(task * 2);
+      },
+      index + Math.floor(Math.random()) * 100,
+    );
+  });
+}
+
+mapLimit2(items, maxLimit, mapper).then(console.log);
