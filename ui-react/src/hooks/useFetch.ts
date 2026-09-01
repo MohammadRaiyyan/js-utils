@@ -2,17 +2,27 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseFetchReturn<T> {
   data: T | undefined;
-  error: string;
+  error: string | null;
   loading: boolean;
   refetch: VoidFunction;
 }
 
-export default function useFetch<T>(url: string): UseFetchReturn<T> {
+interface UseFetchOption<T> {
+  key: readonly unknown[];
+  fetcher: (signal: AbortSignal) => Promise<T>;
+}
+
+export default function useFetch<T>(
+  options: UseFetchOption<T>,
+): UseFetchReturn<T> {
   const [data, setData] = useState<T | undefined>();
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const controllerRef = useRef<AbortController | null>(null);
+  const keyString = JSON.stringify(options.key);
+  const fetcherRef = useRef(options.fetcher);
+  fetcherRef.current = options.fetcher;
 
   const loadData = useCallback(() => {
     controllerRef.current?.abort();
@@ -20,9 +30,9 @@ export default function useFetch<T>(url: string): UseFetchReturn<T> {
     controllerRef.current = controller;
 
     setLoading(true);
-    setLoading(null);
-    fetch(url, { signal: controller.signal })
-      .then((res) => res.json() as T)
+    setError(null);
+    fetcherRef
+      .current(controller.signal)
       .then((result) => {
         setData(result);
       })
@@ -38,11 +48,14 @@ export default function useFetch<T>(url: string): UseFetchReturn<T> {
         if (controller.signal.aborted) return;
         setLoading(false);
       });
-  }, [url]);
+  }, [keyString]);
 
   useEffect(() => {
     void loadData();
-    return () => controllerRef.current.abort();
+
+    return () => {
+      controllerRef.current.abort();
+    };
   }, [loadData]);
 
   return {
