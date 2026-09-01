@@ -1,3 +1,9 @@
+import Products from "./components/products";
+
 export default function App() {
-  return <main>Hello</main>;
+  return (
+    <main className="p-5">
+      <Products />
+    </main>
+  );
 }
