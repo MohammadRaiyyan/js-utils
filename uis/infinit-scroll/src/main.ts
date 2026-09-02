@@ -20,7 +20,6 @@ interface State {
 type Action =
   | { type: "SET_LOADING"; payload: { isLoading: boolean } }
   | { type: "SET_ERROR"; payload: { error: string | null } }
-  | { type: "SET_PAGE"; payload: { page: number } }
   | {
       type: "SET_USERS";
       payload: { users: User[]; total: number; page: number };
@@ -51,11 +50,6 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         hasError: payload.error,
-      };
-    case "SET_PAGE":
-      return {
-        ...state,
-        page: payload.page,
       };
     case "SET_USERS":
       return {
@@ -133,9 +127,6 @@ async function fetchUsers() {
       payload: { users, total, page: state.page + 1 },
     });
   } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") {
-      return;
-    }
     dispatch({ type: "SET_ERROR", payload: { error: "Something went wrong" } });
   } finally {
     dispatch({ type: "SET_LOADING", payload: { isLoading: false } });
