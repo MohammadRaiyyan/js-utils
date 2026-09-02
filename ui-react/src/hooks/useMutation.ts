@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseMutationReturn<TData, TVariables extends Record<string, unknown>> {
   data: TData | undefined;
@@ -24,7 +24,10 @@ export default function useMutation<
   const controllerRef = useRef<AbortController | null>(null);
 
   const mutationFnRef = useRef(mutationFn);
-  mutationFnRef.current = mutationFn;
+
+  useEffect(() => {
+    mutationFnRef.current = mutationFn;
+  }, [mutationFn]);
 
   const mutate = useCallback(async (variables: TVariables) => {
     controllerRef.current?.abort();
@@ -42,8 +45,9 @@ export default function useMutation<
         e instanceof Error ? e.message : "Something went wrong while updating",
       );
     } finally {
-      if (controller.signal.aborted) return;
-      setLoading(false);
+      if (controllerRef.current === controller) {
+        setLoading(false);
+      }
     }
   }, []);
 

@@ -7,8 +7,6 @@ export default function useDebouncedCallback<T extends unknown[]>(
   const timerRef = useRef<number | null>(null);
   const callbackRef = useRef(callback);
 
-  callbackRef.current = callback;
-
   const debouncedCallback = useCallback(
     (...args: T) => {
       if (timerRef.current !== null) {
@@ -22,6 +20,10 @@ export default function useDebouncedCallback<T extends unknown[]>(
     },
     [delay],
   );
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   useEffect(() => {
     return () => {
