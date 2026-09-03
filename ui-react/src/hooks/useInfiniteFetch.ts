@@ -11,11 +11,11 @@ interface UseInfiniteFetchOptions<TData, TSelected> {
 
   hasMore: (lastPage: number, lastData: TData) => boolean;
 
-  select?: (pages: Map<number, TData>) => TSelected;
+  select?: (pages: Array<TData>) => TSelected;
 }
 
 interface State<TData> {
-  pages: Map<number, TData>;
+  pages: Array<TData>;
   loading: boolean;
   error: string | null;
 }
@@ -27,7 +27,6 @@ type Action<TData> =
   | {
       type: "FETCH_SUCCESS";
       payload: {
-        page: number;
         data: TData;
         mode: Mode;
       };
@@ -52,12 +51,9 @@ function reducer<TData>(
       };
 
     case "FETCH_SUCCESS": {
-      const { page, data, mode } = action.payload;
+      const { data, mode } = action.payload;
 
-      const pages =
-        mode === "INITIAL"
-          ? new Map([[page, data]])
-          : new Map(state.pages).set(page, data);
+      const pages = mode === "INITIAL" ? [data] : [...state.pages, data];
 
       return {
         pages,
@@ -86,7 +82,7 @@ interface UseInfiniteFetchReturn<TResponse> {
   refetch: () => void;
 }
 
-export default function useInfiniteFetch<TData, TSelected = Map<number, TData>>(
+export default function useInfiniteFetch<TData, TSelected = Array<TData>>(
   options: UseInfiniteFetchOptions<TData, TSelected>,
 ): UseInfiniteFetchReturn<TSelected> {
   const { select, key, initialPageParam = 0, fetcher, hasMore } = options;
@@ -94,7 +90,7 @@ export default function useInfiniteFetch<TData, TSelected = Map<number, TData>>(
   const keyString = JSON.stringify(key);
 
   const [state, dispatch] = useReducer(reducer<TData>, {
-    pages: new Map(),
+    pages: [],
     loading: false,
     error: null,
   });
@@ -110,7 +106,6 @@ export default function useInfiniteFetch<TData, TSelected = Map<number, TData>>(
 
   useEffect(() => {
     fetcherRef.current = fetcher;
-    hasMoreRef.current = hasMore;
   }, [fetcher, hasMore]);
 
   const loadData = useCallback(async (mode: Mode, initialPage?: number) => {
@@ -139,7 +134,6 @@ export default function useInfiniteFetch<TData, TSelected = Map<number, TData>>(
       dispatch({
         type: "FETCH_SUCCESS",
         payload: {
-          page,
           data,
           mode,
         },
@@ -170,7 +164,7 @@ export default function useInfiniteFetch<TData, TSelected = Map<number, TData>>(
 
     const lastPage = pageRef.current - 1;
 
-    const lastData = state.pages.get(lastPage);
+    const lastData = state.pages.at(lastPage);
 
     if (!lastData) {
       return;

@@ -18,14 +18,16 @@ export default function useIntersectionObsever<E extends HTMLElement>(
 
   useEffect(() => {
     if (!target) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          callbackRef.current();
-        }
-      },
-      { root, rootMargin, threshold },
-    );
+    console.log("Target", target);
+
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      console.log("Entry", entry);
+      console.log("Callback", callbackRef.current);
+      if (entry.isIntersecting) {
+        callbackRef.current();
+      }
+    });
     observer.observe(target);
     return () => {
       observer.disconnect();
