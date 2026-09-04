@@ -8,8 +8,11 @@ import {
   useState,
   type ChangeEvent,
   type HTMLAttributes,
+  type KeyboardEventHandler,
   type ReactNode,
 } from "react";
+import useHandleOutsideClick from "./useHandleOutsideClick";
+import { createPortal } from "react-dom";
 
 type MenuPlacement = "top" | "bottom" | "left" | "right";
 export type OptionType = {
@@ -29,9 +32,11 @@ interface RootProps<T> {
 interface IComboboxContext<T> {
   onChangeOption: (value: T) => void;
   selected: T | undefined;
-  toggleMenu: VoidFunction;
+  setOpenMenu: (state: boolean) => void;
   isMenuOpen: boolean;
   width: number;
+  setTriggerNode: (node: HTMLInputElement | null) => void;
+  triggerRef: HTMLInputElement | null;
 }
 
 const ComboboxContext = createContext<IComboboxContext<unknown> | undefined>(
@@ -50,33 +55,49 @@ function Root<T extends OptionType>(props: RootProps<T>) {
   const { value, onChangeValue, children, width = DEFAULT_WIDTH } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const onChangeOptionRef = useRef<(option: T) => void | undefined>(undefined);
+  const [triggerRef, setTriggerRef] = useState<HTMLInputElement | null>(null);
+
+  const setTriggerNode = useCallback(
+    (node: HTMLInputElement | null) => setTriggerRef(node),
+    [],
+  );
 
   useEffect(() => {
     onChangeOptionRef.current = onChangeValue;
   }, [onChangeValue]);
 
-  const onChangeOption = useCallback((value: T) => {
-    onChangeOptionRef.current(value);
+  const setOpenMenu = useCallback((state: boolean) => {
+    setIsMenuOpen(state);
   }, []);
-
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen((prev) => !prev);
-  }, []);
+  const onChangeOption = useCallback(
+    (value: T) => {
+      onChangeOptionRef.current(value);
+      setIsMenuOpen(false);
+      requestAnimationFrame(() => {
+        triggerRef?.focus();
+      });
+    },
+    [triggerRef],
+  );
 
   const values = useMemo(() => {
     return {
       onChangeOption,
       selected: value,
-      toggleMenu,
+      setOpenMenu,
       isMenuOpen,
       width,
+      setTriggerNode,
+      triggerRef,
     };
   }, [
     onChangeOption,
     value,
-    toggleMenu,
+    setOpenMenu,
     isMenuOpen,
     width,
+    setTriggerNode,
+    triggerRef,
   ]) satisfies IComboboxContext<T>;
 
   return (
@@ -93,7 +114,15 @@ interface InputProps {
   iconLeft?: ReactNode;
 }
 function Input(props: InputProps) {
-  const { toggleMenu, width, selected } = useCombobox();
+  const { setOpenMenu, width, selected, setTriggerNode, isMenuOpen } =
+    useCombobox();
+  const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === "Enter") {
+      if (!isMenuOpen) {
+        setOpenMenu(true);
+      }
+    }
+  };
   return (
     <div
       className={`flex items-center relative ${props.className}`}
@@ -105,11 +134,19 @@ function Input(props: InputProps) {
         </div>
       )}
       <input
-        placeholder={props.placeholder ?? "Select"}
-        value={props.value ? props.value : (selected?.value ?? "")}
+        placeholder={
+          selected?.value ? selected?.label : (props.placeholder ?? "Select")
+        }
+        tabIndex={0}
+        data-selected={Boolean(selected?.value)}
+        value={props.value}
         onChange={props.onChange}
-        onClick={toggleMenu}
-        className={"border border-gray-400 w-full h-9 pl-12"}
+        onClick={() => setOpenMenu(true)}
+        onKeyDown={handleKeyDown}
+        ref={setTriggerNode}
+        className={
+          "border border-gray-400 w-full h-9 pl-12 data-[selected=true]:placeholder:text-inherit"
+        }
       />
     </div>
   );
@@ -121,16 +158,32 @@ interface ContentProps {
   className?: string;
 }
 function Content(props: ContentProps) {
-  const { isMenuOpen, width } = useCombobox();
+  const { isMenuOpen, width, setOpenMenu, triggerRef } = useCombobox();
+  const handleOutSideClick = useCallback(() => {
+    if (!isMenuOpen) return;
+    setOpenMenu(false);
+  }, [setOpenMenu, isMenuOpen]);
+  const ref = useHandleOutsideClick(handleOutSideClick);
   if (!isMenuOpen) return;
-  return (
+  const rect = triggerRef.getBoundingClientRect();
+
+  const style = {
+    width: `${width}px`,
+    position: "absolute" as const,
+    top: `${rect.bottom + props.gutter}px`,
+    left: `${rect.left}px`,
+  };
+  return createPortal(
     <div
       role="listbox"
-      className={`shadow rounded p-2 ${props.className}`}
-      style={{ width: `${width}px` }}
+      className={`shadow rounded p-2 border border-gray-300 ${props.className}`}
+      style={style}
+      ref={ref}
+      tabIndex={0}
     >
       {props.children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 interface OptionProps<T> extends HTMLAttributes<
@@ -146,10 +199,11 @@ function Option<T extends OptionType>(props: OptionProps<T>) {
   return (
     <button
       onClick={(e) => {
-        onChangeOption(props.value);
+        onChangeOption(value);
         onClick?.(e);
       }}
-      aria-selected={selected === value}
+      tabIndex={0}
+      aria-selected={selected?.value === value?.value}
       className={`text-left hover:bg-gray-200 w-full px-3 py-2 aria-selected:bg-indigo-500 aria-selected:text-indigo-50 ${className}`}
       {...rest}
     >
