@@ -1,7 +1,6 @@
 import { ErrorBoundary } from "react-error-boundary";
-import InfiniteProducts from "./components/infinite-products";
-import ProductList from "./components/paginated-products/product-list";
-import Products from "./components/paginated-products";
+
+import TypeHead from "./components/typehead";
 
 export default function App() {
   return (
@@ -10,7 +9,7 @@ export default function App() {
         onError={(e) => console.log("Error", e)}
         FallbackComponent={() => <div>Something went wrong</div>}
       >
-        <InfiniteProducts />
+        <TypeHead />
       </ErrorBoundary>
     </main>
   );
