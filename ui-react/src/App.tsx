@@ -1,6 +1,6 @@
 import { ErrorBoundary } from "react-error-boundary";
 
-import TypeHead from "./components/typehead";
+import AutoComplete from "./components/typehead/autocomplete";
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
         onError={(e) => console.log("Error", e)}
         FallbackComponent={() => <div>Something went wrong</div>}
       >
-        <TypeHead />
+        <AutoComplete />
       </ErrorBoundary>
     </main>
   );
