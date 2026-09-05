@@ -12,18 +12,33 @@ interface IProduct {
   title: string;
 }
 
-function Product(props: { product: IProduct }) {
+function Product(props: {
+  product: IProduct;
+  onSelect: (product: IProduct) => void;
+}) {
   return (
-    <li className="px-3 py-2 hover:bg-gray-200 w-full">
+    <li
+      className="px-3 py-2 hover:bg-gray-200 w-full"
+      onClick={() => props.onSelect(props.product)}
+    >
       {props.product.title}
     </li>
   );
 }
-function Products(props: { products: IProduct[] }) {
+function Products(props: {
+  products: IProduct[];
+  onSelect: (product: IProduct) => void;
+}) {
   return (
     <ul className="flex items-start flex-col gap-2 w-full">
       {props.products.map((product) => {
-        return <Product key={product.id} product={product} />;
+        return (
+          <Product
+            key={product.id}
+            product={product}
+            onSelect={props.onSelect}
+          />
+        );
       })}
     </ul>
   );
@@ -133,6 +148,7 @@ function useDebouncedValue(value = "", delay = 500) {
 }
 export default function AutoComplete() {
   const [search, setSearch] = useState("");
+  const [showMenu, setShowMenu] = useState(false);
   const debouncedValue = useDebouncedValue(search);
 
   const key = useMemo(() => {
@@ -146,37 +162,48 @@ export default function AutoComplete() {
         {
           signal,
         },
-      ).then((res) => {
-        const response = res.json() as unknown as { products: IProduct[] };
-        const { products = [] } = response;
-        return products;
-      });
+      )
+        .then((res) => {
+          return res.json() as unknown as { products: IProduct[] };
+        })
+        .then((result) => {
+          const { products = [] } = result;
+          return products;
+        });
     },
     [debouncedValue],
   );
 
-  const { loading, data, error } = useFetch({ key, fetcher });
+  const handleSelect = useCallback((option: IProduct) => {
+    setSearch(option.title);
+  }, []);
+
+  const { loading, data = [], error } = useFetch({ key, fetcher });
 
   return (
     <div className="relative flex items-center justify-center">
       <input
         type="text"
         placeholder="Search..."
-        className="border border-gray-300 h-9 w-56 p-2"
+        className="border border-gray-300 h-9 w-80 p-2"
         value={search}
         onChange={({ target }) => setSearch(target.value)}
+        onFocus={() => setShowMenu(true)}
+        onBlur={() => setShowMenu(false)}
       />
-      <div className="absolute z-40 top-10 border border-gray-300 shadow-2xl w-56 p-2">
-        {loading ? (
-          <span>Loading....</span>
-        ) : error ? (
-          <span>{error}</span>
-        ) : data.length > 0 ? (
-          <Products products={data} />
-        ) : (
-          <span>No Products</span>
-        )}
-      </div>
+      {showMenu && (
+        <div className="absolute z-40 top-10 border border-gray-300 shadow-2xl w-80 p-2 max-h-80 overflow-y-auto">
+          {loading ? (
+            <span>Loading....</span>
+          ) : error ? (
+            <span>{error}</span>
+          ) : data.length > 0 ? (
+            <Products products={data} onSelect={handleSelect} />
+          ) : (
+            <span>No Products</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
