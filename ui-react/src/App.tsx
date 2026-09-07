@@ -1,6 +1,6 @@
 import { ErrorBoundary } from "react-error-boundary";
 
-import AutoComplete from "./components/typehead/autocomplete";
+import AdvanceTodo from "./components/AdvanceTodo";
 
 export default function App() {
   return (
@@ -9,7 +9,7 @@ export default function App() {
         onError={(e) => console.log("Error", e)}
         FallbackComponent={() => <div>Something went wrong</div>}
       >
-        <AutoComplete />
+        <AdvanceTodo />
       </ErrorBoundary>
     </main>
   );
