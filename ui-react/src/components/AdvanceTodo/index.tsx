@@ -1,6 +1,7 @@
 import { Pencil, Trash } from "lucide-react";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useReducer,
   useState,
@@ -39,7 +40,13 @@ const initialState: State = {
   filter: "all",
 };
 
-function reducer(state: State = initialState, action: Action): State {
+const getInitialState = (): State => {
+  const saved = localStorage.getItem("todos");
+  if (!saved) return initialState;
+  return JSON.parse(saved) as unknown as State;
+};
+
+function reducer(state: State, action: Action): State {
   switch (action.type) {
     case "ADD_TODO": {
       const newTodo: ITodo = {
@@ -84,7 +91,7 @@ function reducer(state: State = initialState, action: Action): State {
 }
 
 function useTodos() {
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, initialState, getInitialState);
   const addTodo = useCallback((title: string) => {
     dispatch({ type: "ADD_TODO", payload: { title } });
   }, []);
@@ -230,6 +237,11 @@ function TodoForm(props: {
 export default function AdvanceTodo() {
   const { todos, filter, addTodo, removeTodo, updateTodo, filterTodo } =
     useTodos();
+
+  useEffect(() => {
+    localStorage.setItem("todos", JSON.stringify({ filter, todos }));
+  }, [todos, filter]);
+
   return (
     <article className="flex items-center justify-center">
       <section className="w-200 flex gap-4 flex-col items-start justify-start bg-gray-50 min-h-150 rounded-2xl p-4">
