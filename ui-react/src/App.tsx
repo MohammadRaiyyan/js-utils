@@ -1,16 +1,14 @@
 import { ErrorBoundary } from "react-error-boundary";
 
-import AdvanceTodo from "./components/AdvanceTodo";
+import ShoppingCart from "./components/shoppingCart";
 
 export default function App() {
   return (
-    <main className="p-5">
-      <ErrorBoundary
-        onError={(e) => console.log("Error", e)}
-        FallbackComponent={() => <div>Something went wrong</div>}
-      >
-        <AdvanceTodo />
-      </ErrorBoundary>
-    </main>
+    <ErrorBoundary
+      onError={(e) => console.log("Error", e)}
+      FallbackComponent={() => <div>Something went wrong</div>}
+    >
+      <ShoppingCart />
+    </ErrorBoundary>
   );
 }
