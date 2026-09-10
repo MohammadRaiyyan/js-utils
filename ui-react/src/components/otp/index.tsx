@@ -1,4 +1,11 @@
-import { useRef, useState, type ChangeEvent, type SubmitEvent } from "react";
+import {
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type KeyboardEventHandler,
+  type SubmitEvent,
+} from "react";
 
 export default function OTP({ length = 6 }: { length?: number }) {
   const [inputs, setInputs] = useState(() => Array.from({ length }, () => ""));
@@ -7,7 +14,8 @@ export default function OTP({ length = 6 }: { length?: number }) {
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const isValid = inputs.join("").length === length;
+    const otp = inputs.join("");
+    const isValid = otp.length === length;
     if (!isValid) {
       setError("Invalid inputs");
       return;
@@ -37,6 +45,23 @@ export default function OTP({ length = 6 }: { length?: number }) {
       inputRefs.current[nextInput].focus();
     };
   };
+  const handleKeyDown = (idx: number) => {
+    return (e: KeyboardEvent<HTMLInputElement>) => {
+      if (e.key !== "Backspace") return;
+
+      e.preventDefault();
+
+      setInputs((prev) => {
+        const copy = [...prev];
+        copy[idx] = "";
+        return copy;
+      });
+
+      if (idx > 0) {
+        inputRefs.current[idx - 1]?.focus();
+      }
+    };
+  };
 
   return (
     <section className="flex items-center justify-center w-screen h-screen">
@@ -53,21 +78,11 @@ export default function OTP({ length = 6 }: { length?: number }) {
                 type="text"
                 value={inp}
                 placeholder="0"
-                id={`input-idx-${idx}`}
                 onChange={handleInput(idx)}
                 ref={(element) => {
                   inputRefs.current[idx] = element;
                 }}
-                onKeyDown={({ key }) => {
-                  if (key === "Backspace") {
-                    const prevIndex = idx - 1;
-                    if (prevIndex < 0) {
-                      return;
-                    }
-                    inputRefs.current[idx].value = "";
-                    inputRefs.current[idx - 1].focus();
-                  }
-                }}
+                onKeyDown={handleKeyDown(idx)}
               />
             );
           })}
