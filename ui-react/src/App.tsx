@@ -1,6 +1,6 @@
 import { ErrorBoundary } from "react-error-boundary";
 
-import MultiStepForm from "./components/multi-step-form";
+import OTP from "./components/otp";
 
 export default function App() {
   return (
@@ -8,7 +8,7 @@ export default function App() {
       onError={(e) => console.log("Error", e)}
       FallbackComponent={() => <div>Something went wrong</div>}
     >
-      <MultiStepForm />
+      <OTP />
     </ErrorBoundary>
   );
 }
