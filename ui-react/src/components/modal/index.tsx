@@ -3,9 +3,6 @@ import {
   useEffect,
   useState,
   type KeyboardEvent,
-  type KeyboardEventHandler,
-  type MouseEvent,
-  type MouseEventHandler,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -18,7 +15,7 @@ function ModalHeader(props: IModalHeaderProps) {
   return <div className={props.className}>{props.children}</div>;
 }
 interface IModalTitle {
-  children: string;
+  children: ReactNode;
   className?: string;
 }
 function ModalTitle(props: IModalTitle) {
@@ -99,7 +96,7 @@ function Modal(props: IModalProps) {
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.addEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleClose]);
 
